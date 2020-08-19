@@ -34,6 +34,12 @@ jacoco {
     toolVersion = "0.8.5"
 }
 
+tasks.named<JacocoReport>("jacocoTestReport") {
+    reports {
+        xml.isEnabled = true
+    }
+}
+
 dependencies {
     api("com.fifesoft:rsyntaxtextarea:3.0.4")
     api("com.github.zafarkhaja:java-semver:0.9.0")
@@ -133,6 +139,10 @@ val japicmp by tasks.registering(JapicmpTask::class) {
     packageExcludes = listOf(
         // Not intended to be used (directly) by add-ons.
         "org.zaproxy.zap.extension.httppanel.view.syntaxhighlight.lexers"
+    )
+
+    methodExcludes = listOf(
+        "org.parosproxy.paros.network.HttpMessage#getParamNameSet(org.parosproxy.paros.network.HtmlParameter\$Type,java.lang.String)"
     )
 
     richReport {
