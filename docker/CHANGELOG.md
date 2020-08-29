@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to the docker containers will be documented in this file.
 
+###  2020-08-28
+ - Packaged scans will use the provided context when spidering and active scanning.
+
+###  2020-08-27
+ - Updated to use webswing 2.5.12
+
 ###  2020-08-03
  - Add `IS_CONTAINERIZED` environment variable to the container image, used in the python script to check for containerized environments (e.g. containerd) without relying on container runtime specific files.
 
