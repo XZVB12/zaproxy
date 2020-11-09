@@ -76,7 +76,7 @@ dependencies {
         setTransitive(false)
     }
     implementation("org.javadelight:delight-nashorn-sandbox:0.1.28")
-    implementation("com.formdev:flatlaf:0.42")
+    implementation("com.formdev:flatlaf:0.43")
 
     runtimeOnly("commons-jxpath:commons-jxpath:1.3")
     runtimeOnly("commons-logging:commons-logging:1.2")
@@ -149,12 +149,20 @@ val japicmp by tasks.registering(JapicmpTask::class) {
         "org.zaproxy.zap.ZAP#JERICHO_LOGGER_PROVIDER"
     )
 
+    classExcludes = listOf(
+        "org.parosproxy.paros.db.paros.ParosTableAlert",
+        "org.parosproxy.paros.db.RecordAlert",
+        "org.zaproxy.zap.db.sql.SqlTableAlert"
+    )
+
     methodExcludes = listOf(
         "org.parosproxy.paros.network.HttpMessage#getParamNameSet(org.parosproxy.paros.network.HtmlParameter\$Type,java.lang.String)",
         "org.parosproxy.paros.core.scanner.Variant#getLeafName(java.lang.String,org.parosproxy.paros.network.HttpMessage)",
         "org.parosproxy.paros.core.scanner.Variant#getTreePath(org.parosproxy.paros.network.HttpMessage)",
         "org.parosproxy.paros.core.scanner.VariantScript#getLeafName(org.parosproxy.paros.core.scanner.VariantCustom,java.lang.String,org.parosproxy.paros.network.HttpMessage)",
-        "org.parosproxy.paros.core.scanner.VariantScript#getTreePath(org.parosproxy.paros.core.scanner.VariantCustom,org.parosproxy.paros.network.HttpMessage)"
+        "org.parosproxy.paros.core.scanner.VariantScript#getTreePath(org.parosproxy.paros.core.scanner.VariantCustom,org.parosproxy.paros.network.HttpMessage)",
+        "org.parosproxy.paros.db.TableAlert#write(int,int,java.lang.String,int,int,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,int,int,int,int)",
+        "org.zaproxy.zap.model.ParameterParser#parseRawParameters(java.lang.String)"
     )
 
     richReport {
