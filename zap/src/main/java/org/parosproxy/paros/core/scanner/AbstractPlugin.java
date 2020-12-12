@@ -67,6 +67,7 @@
 // ZAP: 2020/01/27 Extracted code from sendAndReceive method into regenerateAntiCsrfToken method in
 // ExtensionAntiCSRF.
 // ZAP: 2020/09/23 Add functionality for custom error pages handling (Issue 9).
+// ZAP: 2020/11/26 Use Log4j2 getLogger() and deprecate Log4j1.x.
 package org.parosproxy.paros.core.scanner;
 
 import java.io.IOException;
@@ -80,7 +81,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.httpclient.HttpException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.core.scanner.Alert.Source;
 import org.parosproxy.paros.model.HistoryReference;
@@ -105,7 +107,7 @@ public abstract class AbstractPlugin implements Plugin, Comparable<Object> {
     private HostProcess parent = null;
     private HttpMessage msg = null;
     private boolean enabled = true;
-    private Logger log = Logger.getLogger(this.getClass());
+    private Logger logger = LogManager.getLogger(this.getClass());
     private Configuration config = null;
     // ZAP Added delayInMs
     private int delayInMs;
@@ -678,11 +680,32 @@ public abstract class AbstractPlugin implements Plugin, Comparable<Object> {
     }
 
     /**
-     * Tells whether or not the response has a status code between 400 and 499 (inclusive). Falls
-     * back to check {@code CustomPage.Type.NOTFOUND_404} and {@code
-     * Analyser#isFileExist(HttpMessage)}. Checks if the message matches {@code
-     * CustomPage.Type.OK_200} or {@code CustomPage.Type.ERROR_500} first, in case the user is
-     * trying to override something.
+     * Tells whether or not the response has a status code between 200 and 299 (inclusive), or
+     * {@code CustomPage.Type.OK_200} and {@code Analyser#isFileExist(HttpMessage)}. Checks if the
+     * message matches {@code CustomPage.Type.NOTFOUND_404} or {@code CustomPage.Type.ERROR_500}
+     * first, in case the user is trying to override something.
+     *
+     * @param msg the message that will be checked
+     * @return {@code true} if the message matches, {@code false} otherwise
+     * @since TODO Add version
+     * @see {@code Analyser#isFileExist(HttpMessage)}
+     */
+    public boolean isSuccess(HttpMessage msg) {
+        if (isCustomPage(msg, CustomPage.Type.NOTFOUND_404)
+                || isCustomPage(msg, CustomPage.Type.ERROR_500)) {
+            return false;
+        }
+        if (isCustomPage(msg, CustomPage.Type.OK_200) || parent.getAnalyser().isFileExist(msg)) {
+            return true;
+        }
+        return HttpStatusCode.isSuccess(msg.getResponseHeader().getStatusCode());
+    }
+
+    /**
+     * Tells whether or not the response has a status code between 400 and 499 (inclusive), or
+     * {@code CustomPage.Type.NOTFOUND_404} and {@code Analyser#isFileExist(HttpMessage)}. Checks if
+     * the message matches {@code CustomPage.Type.OK_200} or {@code CustomPage.Type.ERROR_500}
+     * first, in case the user is trying to override something.
      *
      * @param msg the message that will be checked
      * @return {@code true} if the message matches, {@code false} otherwise
@@ -702,8 +725,8 @@ public abstract class AbstractPlugin implements Plugin, Comparable<Object> {
     }
 
     /**
-     * Tells whether or not the response has a status code between 500 and 599 (inclusive). Falls
-     * back to check {@code CustomPage.Type.EROOR_500}. Checks if the message matches {@code
+     * Tells whether or not the response has a status code between 500 and 599 (inclusive), or
+     * {@code CustomPage.Type.EROOR_500}. Checks if the message matches {@code
      * CustomPage.Type.OK_200} or {@code CustomPage.Type.NOTFOUND_404} first, in case the user is
      * trying to override something.
      *
@@ -1032,8 +1055,25 @@ public abstract class AbstractPlugin implements Plugin, Comparable<Object> {
         return getParent().getKb();
     }
 
-    protected Logger getLog() {
-        return log;
+    /**
+     * Gets the logger.
+     *
+     * @return the logger, never {@code null}.
+     * @deprecated (TODO add version) Use {@link #getLogger()} instead.
+     */
+    @Deprecated
+    protected org.apache.log4j.Logger getLog() {
+        return org.apache.log4j.Logger.getLogger(getClass());
+    }
+
+    /**
+     * Gets the logger.
+     *
+     * @return the logger, never {@code null}.
+     * @since TODO add version
+     */
+    protected Logger getLogger() {
+        return logger;
     }
 
     public String getProperty(String key) {
@@ -1413,8 +1453,8 @@ public abstract class AbstractPlugin implements Plugin, Comparable<Object> {
             }
 
             Alert alert = build();
-            if (plugin.log.isDebugEnabled()) {
-                plugin.log.debug(
+            if (plugin.logger.isDebugEnabled()) {
+                plugin.logger.debug(
                         "New alert pluginid="
                                 + alert.getPluginId()
                                 + " "

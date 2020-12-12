@@ -19,17 +19,18 @@
  */
 package org.zaproxy.zap.extension.httppanel.view.impl.models.http.response;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.network.HttpHeader;
 import org.parosproxy.paros.network.HttpMalformedHeaderException;
 import org.zaproxy.zap.extension.httppanel.InvalidMessageDataException;
 import org.zaproxy.zap.extension.httppanel.view.impl.models.http.AbstractHttpStringHttpPanelViewModel;
-import org.zaproxy.zap.extension.httppanel.view.impl.models.http.HttpPanelViewModelUtils;
 
 public class ResponseStringHttpPanelViewModel extends AbstractHttpStringHttpPanelViewModel {
 
-    private static final Logger logger = Logger.getLogger(ResponseStringHttpPanelViewModel.class);
+    private static final Logger logger =
+            LogManager.getLogger(ResponseStringHttpPanelViewModel.class);
 
     @Override
     public String getData() {
@@ -38,8 +39,7 @@ public class ResponseStringHttpPanelViewModel extends AbstractHttpStringHttpPane
         }
 
         return httpMessage.getResponseHeader().toString().replaceAll(HttpHeader.CRLF, HttpHeader.LF)
-                + HttpPanelViewModelUtils.getBodyString(
-                        httpMessage.getResponseHeader(), httpMessage.getResponseBody());
+                + httpMessage.getResponseBody().toString();
     }
 
     @Override
@@ -64,7 +64,6 @@ public class ResponseStringHttpPanelViewModel extends AbstractHttpStringHttpPane
         if (parts.length > 1) {
             body = data.substring(parts[0].length() + 2);
         }
-        HttpPanelViewModelUtils.setBody(
-                httpMessage.getResponseHeader(), httpMessage.getResponseBody(), body);
+        httpMessage.getResponseBody().setBody(body);
     }
 }

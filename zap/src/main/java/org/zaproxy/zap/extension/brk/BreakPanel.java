@@ -23,6 +23,7 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.EventQueue;
 import java.awt.event.KeyEvent;
+import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -31,7 +32,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
-import org.apache.log4j.Logger;
+import javax.swing.JToolBar.Separator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.control.Control.Mode;
 import org.parosproxy.paros.extension.AbstractPanel;
@@ -52,7 +55,7 @@ import org.zaproxy.zap.view.ZapToggleButton;
 public class BreakPanel extends AbstractPanel implements Tab, BreakpointManagementInterface {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger LOGGER = Logger.getLogger(BreakPanel.class);
+    private static final Logger LOGGER = LogManager.getLogger(BreakPanel.class);
 
     private static final String REQUEST_PANEL = "request";
     private static final String RESPONSE_PANEL = "response";
@@ -576,6 +579,22 @@ public class BreakPanel extends AbstractPanel implements Tab, BreakpointManageme
         responseBreakButtons.setButtonMode(mode);
     }
 
+    protected void setShowIgnoreFilesButtons(boolean showButtons) {
+        this.breakToolbarFactory.setShowIgnoreFilesButtons(showButtons);
+
+        mainBreakButtons.setShowIgnoreFilesButtons(showButtons);
+        requestBreakButtons.setShowIgnoreFilesButtons(showButtons);
+        responseBreakButtons.setShowIgnoreFilesButtons(showButtons);
+    }
+
+    public List<BreakpointMessageInterface> getIgnoreRulesEnableList() {
+        return breakToolbarFactory.getIgnoreRulesEnableList();
+    }
+
+    public void updateIgnoreFileTypesRegexs() {
+        breakToolbarFactory.updateIgnoreFileTypesRegexs();
+    }
+
     private ZapToggleButton getRequestButtonFixContentLength() {
         if (fixRequestContentLength == null) {
             fixRequestContentLength =
@@ -620,11 +639,23 @@ public class BreakPanel extends AbstractPanel implements Tab, BreakpointManageme
         private final JToggleButton requestButton;
         private final JToggleButton responseButton;
         private final JToggleButton allButton;
+        private final Separator separatorForBreakOnButtons;
+        private final JToggleButton brkOnJavaScriptButton;
+        private final JToggleButton brkOnCssAndFontsButton;
+        private final JToggleButton brkOnMultimediaButton;
+        private final Separator separatorForBreakOnlyScopeButton;
+        private final JToggleButton brkOnlyOnScopeButton;
 
         public BreakButtonsUI(String name, BreakPanelToolbarFactory breakToolbarFactory) {
             requestButton = breakToolbarFactory.getBtnBreakRequest();
             responseButton = breakToolbarFactory.getBtnBreakResponse();
             allButton = breakToolbarFactory.getBtnBreakAll();
+            separatorForBreakOnButtons = new JToolBar.Separator();
+            brkOnJavaScriptButton = breakToolbarFactory.getBtnBreakOnJavaScript();
+            brkOnCssAndFontsButton = breakToolbarFactory.getBtnBreakOnCssAndFonts();
+            brkOnMultimediaButton = breakToolbarFactory.getBtnBreakOnMultimedia();
+            separatorForBreakOnlyScopeButton = new JToolBar.Separator();
+            brkOnlyOnScopeButton = breakToolbarFactory.getBtnOnlyBreakOnScope();
 
             toolBar = new JToolBar();
             toolBar.setFloatable(false);
@@ -640,6 +671,12 @@ public class BreakPanel extends AbstractPanel implements Tab, BreakpointManageme
             toolBar.add(breakToolbarFactory.getBtnContinue());
             toolBar.add(breakToolbarFactory.getBtnDrop());
             toolBar.add(breakToolbarFactory.getBtnBreakPoint());
+            toolBar.add(separatorForBreakOnButtons);
+            toolBar.add(brkOnJavaScriptButton);
+            toolBar.add(brkOnCssAndFontsButton);
+            toolBar.add(brkOnMultimediaButton);
+            toolBar.add(separatorForBreakOnlyScopeButton);
+            toolBar.add(brkOnlyOnScopeButton);
         }
 
         /**
@@ -664,6 +701,15 @@ public class BreakPanel extends AbstractPanel implements Tab, BreakpointManageme
             requestButton.setVisible(!simple);
             responseButton.setVisible(!simple);
             allButton.setVisible(simple);
+        }
+
+        public void setShowIgnoreFilesButtons(boolean showButtons) {
+            separatorForBreakOnButtons.setVisible(showButtons);
+            brkOnJavaScriptButton.setVisible(showButtons);
+            brkOnCssAndFontsButton.setVisible(showButtons);
+            brkOnMultimediaButton.setVisible(showButtons);
+            separatorForBreakOnlyScopeButton.setVisible(showButtons);
+            brkOnlyOnScopeButton.setVisible(showButtons);
         }
 
         /**

@@ -69,6 +69,7 @@
 // ZAP: 2020/07/31 Tidy up parameter methods
 // ZAP: 2020/08/17 Changed to use getTreePath(msg) method
 // ZAP: 2020/11/02 Do not get leaf name if finding branch nodes.
+// ZAP: 2020/11/26 Use Log4j 2 classes for logging.
 package org.parosproxy.paros.model;
 
 import java.awt.EventQueue;
@@ -82,7 +83,8 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
 import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.URIException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.db.DatabaseException;
 import org.parosproxy.paros.network.HttpHeader;
@@ -93,6 +95,7 @@ import org.parosproxy.paros.network.HttpStatusCode;
 import org.parosproxy.paros.view.View;
 import org.zaproxy.zap.ZAP;
 import org.zaproxy.zap.eventBus.Event;
+import org.zaproxy.zap.model.SessionStructure;
 import org.zaproxy.zap.model.Target;
 import org.zaproxy.zap.view.SiteTreeFilter;
 
@@ -112,7 +115,7 @@ public class SiteMap extends SortedTreeModel {
     private SiteTreeFilter filter = null;
 
     // ZAP: Added log
-    private static Logger log = Logger.getLogger(SiteMap.class);
+    private static Logger log = LogManager.getLogger(SiteMap.class);
 
     public static SiteMap createTree(Model model) {
         SiteMap siteMap = new SiteMap(null, model);
@@ -148,7 +151,7 @@ public class SiteMap extends SortedTreeModel {
             if (parent == null) {
                 return null;
             }
-            List<String> path = model.getSession().getTreePath(msg);
+            List<String> path = SessionStructure.getTreePath(model, msg);
             if (path.size() == 0) {
                 // Its a top level node
                 resultNode = parent;
@@ -157,7 +160,7 @@ public class SiteMap extends SortedTreeModel {
                 folder = path.get(i);
                 if (folder != null && !folder.equals("")) {
                     if (i == path.size() - 1) {
-                        String leafName = model.getSession().getLeafName(folder, msg);
+                        String leafName = SessionStructure.getLeafName(model, folder, msg);
                         resultNode = findChild(parent, leafName);
                     } else {
                         parent = findChild(parent, folder);
@@ -214,7 +217,7 @@ public class SiteMap extends SortedTreeModel {
                 return null;
             }
 
-            List<String> path = model.getSession().getTreePath(msg);
+            List<String> path = SessionStructure.getTreePath(model, msg);
             if (path.size() == 0) {
                 // Its a top level node
                 resultNode = parent;
@@ -226,7 +229,7 @@ public class SiteMap extends SortedTreeModel {
                         if (matchStructural) {
                             resultNode = findChild(parent, folder);
                         } else {
-                            String leafName = model.getSession().getLeafName(folder, msg);
+                            String leafName = SessionStructure.getLeafName(model, folder, msg);
                             resultNode = findChild(parent, leafName);
                         }
                     } else {
@@ -270,14 +273,14 @@ public class SiteMap extends SortedTreeModel {
                 return null;
             }
 
-            List<String> path = model.getSession().getTreePath(uri);
+            List<String> path = SessionStructure.getTreePath(model, uri);
             for (int i = 0; i < path.size(); i++) {
                 folder = path.get(i);
 
                 if (folder != null && !folder.equals("")) {
                     if (method != null && i == path.size() - 1) {
                         String leafName =
-                                model.getSession().getLeafName(folder, uri, method, postData);
+                                SessionStructure.getLeafName(model, folder, uri, method, postData);
                         resultNode = findChild(resultNode, leafName);
                     } else {
                         resultNode = findChild(resultNode, folder);
@@ -325,7 +328,7 @@ public class SiteMap extends SortedTreeModel {
             }
             lastParent = parent;
 
-            List<String> path = model.getSession().getTreePath(uri);
+            List<String> path = SessionStructure.getTreePath(model, uri);
             for (int i = 0; i < path.size(); i++) {
                 folder = path.get(i);
                 if (folder != null && !folder.equals("")) {
@@ -423,13 +426,13 @@ public class SiteMap extends SortedTreeModel {
             // add host
             parent = findAndAddChild(parent, host, ref, msg);
 
-            List<String> path = model.getSession().getTreePath(msg);
+            List<String> path = SessionStructure.getTreePath(model, msg);
             for (int i = 0; i < path.size(); i++) {
                 folder = path.get(i);
                 if (folder != null && !folder.equals("")) {
                     if (newOnly) {
                         // Check to see if it already exists
-                        String leafName = model.getSession().getLeafName(folder, msg);
+                        String leafName = SessionStructure.getLeafName(model, folder, msg);
                         isNew = (findChild(parent, leafName) == null);
                     }
                     if (i == path.size() - 1) {
@@ -534,7 +537,7 @@ public class SiteMap extends SortedTreeModel {
         // ZAP: Added debug
         log.debug("findAndAddLeaf " + parent.getNodeName() + " / " + nodeName);
 
-        String leafName = model.getSession().getLeafName(nodeName, msg);
+        String leafName = SessionStructure.getLeafName(model, nodeName, msg);
         SiteNode node = findChild(parent, leafName);
         if (node == null) {
             if (!ref.getCustomIcons().isEmpty()) {

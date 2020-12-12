@@ -93,6 +93,9 @@
 // ZAP: 2019/11/09 Ability to filter to active scan (Issue 5278).
 // ZAP: 2020/09/23 Add functionality for custom error pages handling (Issue 9).
 // ZAP: 2020/10/19 Tweak JavaDoc and init startNodes in the constructor.
+// ZAP: 2020/06/30 Fix bug that makes zap test same request twice (Issue 6043).
+// ZAP: 2020/11/23 Expose getScannerParam() for tests.
+// ZAP: 2020/11/26 Use Log4j 2 classes for logging.
 package org.parosproxy.paros.core.scanner;
 
 import java.io.IOException;
@@ -101,11 +104,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.common.ThreadPool;
 import org.parosproxy.paros.control.Control;
@@ -114,6 +119,7 @@ import org.parosproxy.paros.model.HistoryReference;
 import org.parosproxy.paros.network.ConnectionParam;
 import org.parosproxy.paros.network.HttpMalformedHeaderException;
 import org.parosproxy.paros.network.HttpMessage;
+import org.parosproxy.paros.network.HttpRequestHeader;
 import org.parosproxy.paros.network.HttpSender;
 import org.zaproxy.zap.extension.alert.ExtensionAlert;
 import org.zaproxy.zap.extension.ascan.ScanPolicy;
@@ -132,7 +138,7 @@ import org.zaproxy.zap.users.User;
 
 public class HostProcess implements Runnable {
 
-    private static final Logger log = Logger.getLogger(HostProcess.class);
+    private static final Logger log = LogManager.getLogger(HostProcess.class);
     private static final DecimalFormat decimalFormat = new java.text.DecimalFormat("###0.###");
 
     private List<StructuralNode> startNodes;
@@ -325,15 +331,25 @@ public class HostProcess implements Runnable {
             }
 
             for (StructuralNode startNode : startNodes) {
+                Map<String, Integer> historyIdsToAdd = new LinkedHashMap<>();
                 traverse(
                         startNode,
                         true,
                         node -> {
                             if (canScanNode(node)) {
-                                messagesIdsToAppScan.add(node.getHistoryReference().getHistoryId());
+                                int nodeHistoryId = node.getHistoryReference().getHistoryId();
+                                if (node.getMethod().equals(HttpRequestHeader.GET)) {
+                                    boolean nodeSeen = historyIdsToAdd.containsKey(nodeHash(node));
+                                    if (!nodeSeen || !isTemporary(node)) {
+                                        historyIdsToAdd.put(nodeHash(node), nodeHistoryId);
+                                    }
+                                } else {
+                                    messagesIdsToAppScan.add(nodeHistoryId);
+                                }
                             }
                         });
 
+                messagesIdsToAppScan.addAll(historyIdsToAdd.values());
                 getAnalyser().start(startNode);
             }
             nodeInScopeCount = messagesIdsToAppScan.size();
@@ -373,6 +389,16 @@ public class HostProcess implements Runnable {
             notifyHostComplete();
             getHttpSender().shutdown();
         }
+    }
+
+    private String nodeHash(StructuralNode node) {
+        String nodeMethod = node.getMethod();
+        String nodeURI = node.getURI().getEscapedURI();
+        return nodeMethod + nodeURI;
+    }
+
+    private boolean isTemporary(StructuralNode node) {
+        return node.getHistoryReference().getHistoryType() == HistoryReference.TYPE_TEMPORARY;
     }
 
     /**
@@ -1131,7 +1157,14 @@ public class HostProcess implements Runnable {
         return kb;
     }
 
-    protected ScannerParam getScannerParam() {
+    /**
+     * Gets the scanner parameters.
+     *
+     * <p><strong>Note:</strong> Not part of the public API.
+     *
+     * @return the scanner parameters.
+     */
+    public ScannerParam getScannerParam() {
         return scannerParam;
     }
 

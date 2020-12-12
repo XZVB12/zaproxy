@@ -21,7 +21,8 @@ package org.zaproxy.zap.extension.httppanel.view.impl.models.http.response;
 
 import java.util.Arrays;
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.network.HttpMalformedHeaderException;
 import org.zaproxy.zap.extension.httppanel.InvalidMessageDataException;
@@ -30,7 +31,7 @@ import org.zaproxy.zap.extension.httppanel.view.impl.models.http.HttpPanelViewMo
 
 public class ResponseByteHttpPanelViewModel extends AbstractHttpByteHttpPanelViewModel {
 
-    private static final Logger logger = Logger.getLogger(ResponseByteHttpPanelViewModel.class);
+    private static final Logger logger = LogManager.getLogger(ResponseByteHttpPanelViewModel.class);
 
     @Override
     public byte[] getData() {
@@ -55,7 +56,7 @@ public class ResponseByteHttpPanelViewModel extends AbstractHttpByteHttpPanelVie
             return;
         }
 
-        int pos = findHeaderLimit(data);
+        int pos = HttpPanelViewModelUtils.findHeaderLimit(data);
 
         if (pos == -1) {
             logger.warn("Could not Save Header, limit not found. Header: " + new String(data));
@@ -72,34 +73,5 @@ public class ResponseByteHttpPanelViewModel extends AbstractHttpByteHttpPanelVie
         }
 
         httpMessage.getResponseBody().setBody(ArrayUtils.subarray(data, pos, data.length));
-        HttpPanelViewModelUtils.updateResponseContentLength(httpMessage);
-    }
-
-    private int findHeaderLimit(byte[] data) {
-        boolean lastIsCRLF = false;
-        boolean lastIsCR = false;
-        boolean lastIsLF = false;
-        int pos = -1;
-
-        for (int i = 0; i < data.length; ++i) {
-            if (!lastIsCR && data[i] == '\r') {
-                lastIsCR = true;
-            } else if (!lastIsLF && data[i] == '\n') {
-                if (lastIsCRLF) {
-                    pos = i;
-                    break;
-                }
-
-                lastIsCRLF = true;
-                lastIsCR = false;
-                lastIsLF = false;
-            } else {
-                lastIsCR = false;
-                lastIsLF = false;
-                lastIsCRLF = false;
-            }
-        }
-
-        return pos;
     }
 }
